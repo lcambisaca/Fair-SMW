@@ -1,5 +1,7 @@
 ## FAIR-SMW
 
+https://arxiv.org/abs/2510.20220
+
 ### code structure
 ```
 -- src
