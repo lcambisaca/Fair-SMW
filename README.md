@@ -1,4 +1,4 @@
-## code repository for scalable spectral clustering with group fairness constraints
+## FAIR-SMW
 
 ### code structure
 ```
