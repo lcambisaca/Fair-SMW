@@ -1,0 +1,225 @@
+close all; clear; clc;
+
+anz_runs = 1;
+n_range = 1000:1000:5000;
+
+% so k < 10
+k = 2;                                                                                                          
+h = 2;
+
+af = 10;
+bf = 5;
+cf = 3;
+df = 1;
+
+time_alg1 = zeros(anz_runs,length(n_range)); %Nomalized-SC
+% time_alg2 = zeros(anz_runs,length(n_range)); %Fair-SC
+time_alg3 = zeros(anz_runs,length(n_range)); %S-Fair-SC
+% time_alg4Rw = zeros(anz_runs,length(n_range)); %RW-SVM-OLD:  G = D\W
+% time_alg4Sym = zeros(anz_runs,length(n_range)); %SYM-SVM-OLD: G = (sqrtD\W)/sqrtD
+time_alg5 = zeros(anz_runs,length(n_range)); %W+n
+time_alg6Rw = zeros(anz_runs,length(n_range)); %RW-SVM-SC: G = D\W + n * eye(n)
+time_alg6Sym = zeros(anz_runs,length(n_range)); %SYM-SVM-SC: G = (sqrtD\W)/sqrtD +  n * eye(n)
+
+
+
+error_alg1 = zeros(anz_runs,length(n_range));
+% error_alg2 = zeros(anz_runs,length(n_range));
+error_alg3 = zeros(anz_runs,length(n_range));
+% error_alg4Rw = zeros(anz_runs,length(n_range));
+% error_alg4Sym = zeros(anz_runs,length(n_range));
+error_alg5 = zeros(anz_runs,length(n_range));
+error_alg6Rw = zeros(anz_runs,length(n_range));
+error_alg6Sym = zeros(anz_runs,length(n_range));
+
+
+eigs_alg1 = zeros(anz_runs,length(n_range));
+% eigs_alg2 = zeros(anz_runs,length(n_range));
+eigs_alg3 = zeros(anz_runs,length(n_range));
+% eigs_alg4Rw = zeros(anz_runs,length(n_range));
+% eigs_alg4Sym = zeros(anz_runs,length(n_range));
+eigs_alg5 = zeros(anz_runs,length(n_range));
+eigs_alg6Rw = zeros(anz_runs,length(n_range));
+eigs_alg6Sym = zeros(anz_runs,length(n_range));
+
+
+for mmm = 1:length(n_range)
+    n = n_range(mmm);
+    a = af*(log(n)/n)^(2/3);
+    b = bf*(log(n)/n)^(2/3);
+    c = cf*(log(n)/n)^(2/3);
+    d = df*(log(n)/n)^(2/3); 
+    % a = 0.99999;
+    % b = 0.99998;
+    % c = 0.99997;
+    % d = 0.99996;
+
+    fprintf('-----------------n = %d --------------------------------\n', n);
+    block_sizes = (n/(k*h))*ones(1,k*h);
+       
+    sensitive = zeros(n,1);
+    labels = zeros(n,1);
+
+   
+    for yyy = 1:k
+        for zzz = 1:h
+            sensitive(((n/k)*(yyy-1)+(n/(k*h))*(zzz-1)+1):((n/k)*(yyy-1)+(n/(k*h))*zzz)) = zzz;
+            labels(((n/k)*(yyy-1)+(n/(k*h))*(zzz-1)+1):((n/k)*(yyy-1)+(n/(k*h))*zzz)) = yyy;
+        end
+    end
+    
+    for ell = 1:anz_runs
+        
+        fprintf('-----------------run = %d --------------------------------\n', ell);
+        rng(1000 + n + ell); 
+        [W, D, F] = generate_SBM(n,a,b,c,d,k,h,block_sizes,sensitive);
+
+        tstart1 = tic;
+        [labelsalg1 , t1] = alg1(W, D, k);
+        time_alg1(ell,mmm) = toc(tstart1);
+        eigs_alg1(ell,mmm) = t1;
+        error_alg1(ell,mmm)=clustering_accuracy(labels,labelsalg1);
+        
+        % tstart2 = tic;
+        % [labelsalg2 , t2] = alg2(W, D, F, k);
+        % time_alg2(ell,mmm) = toc(tstart2);
+        % eigs_alg2(ell,mmm) = t2;
+        % error_alg2(ell,mmm)=clustering_accuracy(labels,labelsalg2);
+
+        tstart3 = tic;
+        [labelsalg3 , t3] = alg3(W, D, F, k);
+        time_alg3(ell,mmm) = toc(tstart3);
+        eigs_alg3(ell,mmm) = t3;
+        error_alg3(ell,mmm)=clustering_accuracy(labels,labelsalg3);   
+
+        % tstart4Rw = tic;
+        % [labelsalg4Rw , t4] = alg4Rw(W, D, F, k); 
+        % time_alg4Rw(ell,mmm) = toc(tstart4Rw);
+        % eigs_alg4Rw(ell,mmm) = t4;
+        % error_alg4Rw(ell,mmm)=clustering_accuracy(labels,labelsalg4Rw);
+        
+        % tstart4Sym = tic;
+        % [labelsalg4Sym , t5] = alg4Sym(W, D, F, k);
+        % eigs_alg4Sym(ell,mmm) = t5;
+        % time_alg4Sym(ell,mmm) = toc(tstart4Sym);
+        % error_alg4Sym(ell,mmm)=clustering_accuracy(labels,labelsalg4Sym);
+        % 
+        tstart5 = tic;
+        [labelsalg5 , t6] = alg5(W, D, F, k);
+        time_alg5(ell,mmm) = toc(tstart5);
+        eigs_alg5(ell,mmm) = t6;
+        error_alg5(ell,mmm)=clustering_accuracy(labels,labelsalg5);
+
+        tstart6Rw = tic;
+        [labelsalg6Rw , t7] = alg6Rw(W, D, F, k);
+        time_alg6Rw(ell,mmm) = toc(tstart6Rw);
+        eigs_alg6Rw(ell,mmm) = t7;
+        error_alg6Rw(ell,mmm)=clustering_accuracy(labels,labelsalg6Rw);
+
+        tstart6Sym = tic;
+        [labelsalg6Sym , t8] = alg6Sym(W, D, F, k);
+        time_alg6Sym(ell,mmm) = toc(tstart6Sym);
+        eigs_alg6Sym(ell,mmm) = t8;
+        error_alg6Sym(ell,mmm)=clustering_accuracy(labels,labelsalg6Sym);
+    end
+end
+difftime1 = time_alg1 - eigs_alg1;
+% difftime2 = time_alg2 - eigs_alg2;
+difftime3 = time_alg3 - eigs_alg3;
+% difftime4Rw = time_alg4Rw - eigs_alg4Rw;
+% difftime4Sym = time_alg4Sym - eigs_alg4Sym;
+difftime5 = time_alg5 - eigs_alg5;
+difftime6Rw = time_alg6Rw - eigs_alg6Rw;
+difftime6Sym = time_alg6Sym - eigs_alg6Sym;
+
+% set default sizes for figures:
+ulesfontsize = 15;
+set(0, 'DefaultAxesFontSize', ulesfontsize);
+set(0, 'DefaultTextFontSize', ulesfontsize);
+set(0, 'DefaultUIControlFontSize', ulesfontsize);
+set(0,'DefaultLineMarkerSize',ulesfontsize);
+set(0,'DefaultLineLineWidth',2.5) 
+set(gcf, 'PaperPosition', [0 0 10 7.5])
+set(gcf, 'PaperSize', [10 7.5]);
+
+figure;clf;
+hold on
+plot(n_range, median(error_alg1,1), 'bx-');   % blue x
+% plot(n_range, median(error_alg2,1), 'mo-');   % magenta circle
+plot(n_range, median(error_alg3,1), 'rd-');   % yellow diamond
+% plot(n_range, median(error_alg4Rw,1), 'r^-'); % red triangle up
+% plot(n_range, median(error_alg4Sym,1), 'k+-');% black plus
+plot(n_range, median(error_alg5,1), 'gs-');   % green square
+plot(n_range, median(error_alg6Sym,1), 'c*-'); % cyan star
+plot(n_range, median(error_alg6Rw,1), 'mo-');% magenta | 
+hold off
+legend({'SC','S-Fair-SC','AFF-Fair-SMW','SYM-Fair-SNW','RW-Fair-SMW'}, 'Location','northwest', 'FontSize',9)
+xlabel('n')
+ylabel('Error')
+ylim([0,1])
+title(strcat('Error Rate of Algorithms using SBM Model' , ' (h=',num2str(h),', k=',num2str(k) , ')'),'FontWeight','normal')
+grid on
+% Compute n^2 reference curve
+n2_curve = n_range.^2;
+scale_factor = mean(mean(time_alg5,1)) / mean(n2_curve);
+scaled_n2_curve = scale_factor * n2_curve;
+
+figure;clf;
+hold on
+plot(n_range, mean(time_alg1,1), 'bx-');       % blue x
+% plot(n_range, mean(time_alg2,1), 'mo-');       % yellow diamond
+plot(n_range, mean(time_alg3,1), 'rd-');       % yellow diamond
+% plot(n_range, mean(time_alg4Rw,1), 'r^-');     % red triangle up
+% plot(n_range, mean(time_alg4Sym,1), 'k+-');    % black plus
+plot(n_range, mean(time_alg5,1), 'gs-');       % cyan star
+plot(n_range, mean(time_alg6Sym,1), 'c*-');     % magenta square
+plot(n_range, mean(time_alg6Rw,1), 'mo-');    % green triangle right
+plot(n_range, scaled_n2_curve, 'k--');
+
+legend({'SC','S-Fair-SC','AFF-Fair-MWC','SYM-Fair-SMW','RW-Fair-SMW','O(n^2)'}, 'Location','northwest', 'FontSize',9)
+
+xlabel('n')
+ylabel('Running time (s)')
+title(strcat('Algorithms Run Time Using SBM Model ', ' (h=',num2str(h),', k=',num2str(k),')'), 'FontWeight','normal')
+grid on
+hold off
+
+figure;clf;
+hold on
+plot(n_range,mean(eigs_alg1,1),'bx-')
+% plot(n_range,mean(eigs_alg2,1),'mo-')
+plot(n_range,mean(eigs_alg3,1),'rd-')
+% plot(n_range,mean(eigs_alg4Rw,1),'r^-')
+% plot(n_range,mean(eigs_alg4Sym,1),'k+-')
+plot(n_range,mean(eigs_alg5,1),'gs-')
+plot(n_range,mean(eigs_alg6Sym,1),'c*-')
+plot(n_range,mean(eigs_alg6Rw,1),'mo-')
+hold off
+% 'Normalized-SC','Fair-SC'
+legend({'SC','S-Fair-SC','AFF-Fair-SMW','SYM-Fair-SNW','RW-Fair-SMW'}, 'Location','northwest', 'FontSize',9)
+xlabel('n')
+ylabel('Running time (s)')
+title(strcat('Algorithms Eigs Run Time Using SBM Model ', ' (h=',num2str(h),', k=',num2str(k),')'), 'FontWeight','normal')
+grid on
+
+
+figure;clf;
+hold on
+plot(n_range,mean(difftime1,1),'bx-')
+% plot(n_range,mean(difftime2,1),'mo-')
+plot(n_range,mean(difftime3,1),'rd-')
+% plot(n_range,mean(difftime4Rw,1),'r^-')
+% plot(n_range,mean(difftime4Sym,1),'k+-')
+plot(n_range,mean(difftime5,1),'gs-')
+plot(n_range,mean(difftime6Sym,1),'c*-')
+plot(n_range,mean(difftime6Rw,1),'mo-')
+hold off
+% 'Normalized-SC','Fair-SC'
+legend({'SC','S-Fair-SC','AFF-Fair-SMW','SYM-Fair-SNW','RW-Fair-SMW'}, 'Location','northwest', 'FontSize',9)
+xlabel('n')
+ylabel('Running time (s)')
+title(strcat('Algorithms Run-time excluding eigs Using SBM Model ', ' (h=',num2str(h),', k=',num2str(k),')'), 'FontWeight','normal')
+grid on
+
+
+

@@ -1,0 +1,129 @@
+clc; clear; close all;
+addpath('../')
+
+group = readmatrix('group_clean.csv');
+friendship = readmatrix('friendship_clean.csv');
+
+nall = size(group, 1);
+A = zeros(nall, nall);
+for m = 1:size(friendship,1)
+    i = find(group(:,1) == friendship(m,1));
+    j = find(group(:,1) == friendship(m,2));
+    if friendship(m,3) == 1
+        A(i,j) = 1;
+        A(j,i) = 1;
+    end
+end
+
+G = graph(A);
+
+% find the largest connected component of graph G
+[bin,binsize] = conncomp(G);
+idx = binsize(bin) == max(binsize);
+SG = subgraph(G, idx);
+
+% W matrix
+W = adjacency(SG);
+n = size(W, 1);
+
+% D matrix
+D = diag(W*ones(n,1));
+
+% F matrix
+g = group(idx,:);
+gmale = g(:,2);
+gfemale = double(~gmale);
+F = gfemale - sum(gfemale)/n;
+
+% Clustering range and number of runs
+krange = 2:1:13;
+numRuns = 10;
+
+% To store balance values across runs
+balance1_all = zeros(length(krange), numRuns);
+% balance2_all = zeros(length(krange), numRuns);
+balance3_all = zeros(length(krange), numRuns);
+% balance4Rw_all = zeros(length(krange), numRuns);
+% balance4Sym_all = zeros(length(krange), numRuns);
+balance5_all = zeros(length(krange), numRuns);
+balance6Rw_all = zeros(length(krange), numRuns);
+balance6Sym_all = zeros(length(krange), numRuns);
+
+for run = 1:numRuns
+    fprintf('Run %d/%d\n', run, numRuns);
+    for i = 1:length(krange)
+        k = krange(i);
+
+        [labels1, t] = alg1(W, D,k); 
+        % [labels2, t] = alg2(W, D, F, k);
+        [labels3, t] = alg3(W, D, F, k);
+        % [labels4Rw, t] = alg4Rw(W, D, F, k); 
+        % [labels4Sym, t] = alg4Sym(W, D, F, k); 
+        [labels5, t] = alg5(W, D, F, k); 
+        [labels6Rw, t] = alg6Rw(W, D, F, k); 
+        [labels6Sym, t] = alg6Sym(W, D, F, k); 
+
+        balance1_all(i, run) = computeBalance(labels1, gmale, k);
+        % balance2_all(i, run) = computeBalance(labels2, gmale, k);
+        balance3_all(i, run) = computeBalance(labels3, gmale, k);
+        % balance4Rw_all(i, run) = computeBalance(labels4Rw, gmale, k);
+        % balance4Sym_all(i, run) = computeBalance(labels4Sym, gmale, k);
+        balance5_all(i, run) = computeBalance(labels5, gmale, k);
+        balance6Rw_all(i, run) = computeBalance(labels6Rw, gmale, k);
+        balance6Sym_all(i, run) = computeBalance(labels6Sym, gmale, k);
+
+    end
+end
+
+% Compute mean balance
+mean_balance1 = mean(balance1_all, 2);
+% mean_balance2 = mean(balance2_all, 2);
+mean_balance3 = mean(balance3_all, 2);
+% mean_balance4Rw = mean(balance4Rw_all, 2);
+% mean_balance4Sym = mean(balance4Sym_all, 2);
+mean_balance5 = mean(balance5_all, 2);
+mean_balance6Rw = mean(balance6Rw_all, 2);
+mean_balance6Sym = mean(balance6Sym_all, 2);
+
+
+% set default sizes for figures:
+ulesfontsize = 15;
+set(0, 'DefaultAxesFontSize', ulesfontsize);
+set(0, 'DefaultTextFontSize', ulesfontsize);
+set(0, 'DefaultUIControlFontSize', ulesfontsize);
+set(0,'DefaultLineMarkerSize',ulesfontsize);
+set(0,'DefaultLineLineWidth',2.5) 
+set(gcf, 'PaperPosition', [0 0 10 7.5])
+set(gcf, 'PaperSize', [10 7.5]);
+
+% Set print size
+set(gcf, 'PaperUnits', 'inches');
+set(gcf, 'PaperPosition', [0 0 6 4]);
+set(gcf, 'PaperSize', [6 4]);
+set(gcf, 'Units', 'inches', 'Position', [1,1,6,4]);
+
+% Plot mean balance
+figure; clf;
+
+
+hold on
+plot(krange, mean_balance1, 'bx-');
+% plot(krange, mean_balance2, 'mo-');
+plot(krange, mean_balance3, 'rd-');
+% plot(krange, mean_balance4Rw, 'r^-');
+% plot(krange, mean_balance4Sym, 'k+-');
+plot(krange, mean_balance5, 'gs-');
+plot(krange, mean_balance6Rw, 'c*-');
+plot(krange, mean_balance6Sym, 'mo-');
+
+legend({'SC','S-Fair-SC','AFF-SVM-SC','SYM-SVM-SC','RW-SVM-SC'}, 'Location','northeast', 'FontSize',9)
+xlabel('k (Clusters)');
+ylabel('Mean Balance');
+title(sprintf('Mean Balance Metric over %d runs (Friendship Data Set)', numRuns), 'FontWeight', 'normal');
+grid on;
+hold off
+
+
+
+% Save as PDF
+print(gcf, 'MeanBalancePlot', '-dpdf', '-r300');  % Will save MeanBalancePlot.pdf
