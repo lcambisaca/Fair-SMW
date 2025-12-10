@@ -63,7 +63,7 @@ end
 
 % Clustering range and number of runs
 krange = 2:1:15;
-numRuns = 1;
+numRuns = 10;
 
 time_alg1 = zeros(length(krange), numRuns); %Nomalized-SC
 % time_alg2 = zeros(length(krange), numRuns); %Fair-SC
@@ -119,9 +119,7 @@ for run = 1:numRuns
         % balance2_all(i, run) = computeBalanceFM(labelsalg2, G, k);
         
         tstart3 = tic;
-        [labelsalg3 , t3,gap_lm,iter_ct] = alg3(W, D, F, k);
-        alg3_iterct(i, run) = iter_ct;
-
+        [labelsalg3 , t3] = alg3(W, D, F, k);
         time_alg3(i,run) = toc(tstart3);
         eigs_alg3(i,run) = t3;
         balance3_all(i, run) = computeBalanceFM(labelsalg3, G, k);
@@ -140,8 +138,7 @@ for run = 1:numRuns
         % balance4Sym_all(i, run) = computeBalanceFM(labelsalg4Sym, G, k);
 
         tstart5 = tic;
-        [labelsalg5, t6,gap_lm,iter_ct] = alg5(W, D, F, k);
-        alg5_iterct(i, run) = iter_ct;
+        [labelsalg5, t6] = alg5(W, D, F, k);
         time_alg5(i, run) = toc(tstart5);
         eigs_alg5(i, run) = t6;
         balance5_all(i, run) = computeBalanceFM(labelsalg5, G, k);
