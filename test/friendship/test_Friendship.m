@@ -37,7 +37,7 @@ F = gfemale - sum(gfemale)/n;
 
 % Clustering range and number of runs
 krange = 2:1:15;
-numRuns = 1;
+numRuns = 10;
 
 time_alg1 = zeros(length(krange), numRuns); %Nomalized-SC
 % time_alg2 = zeros(length(krange), numRuns); %Fair-SC
